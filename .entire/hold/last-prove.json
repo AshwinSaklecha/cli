@@ -1,0 +1,25 @@
+{
+  "passed": false,
+  "at": "2026-09-06T06:08:56.552272Z",
+  "freeze_ok": true,
+  "verify_ok": true,
+  "test_command": "npm test --prefix demo/charge-api",
+  "intent_regressions": [
+    {
+      "dependent": {
+        "name": "processPayment",
+        "file": "demo/charge-api/src/processPayment.ts",
+        "line": 7
+      },
+      "checkpoint_id": "b352152c86225b8295ae2e672d9f06c6abb09315",
+      "quote": "VIP customers never receive more than 50% total discount, regardless of overlapping promotions.",
+      "change": "holidayBonus +20% in src/holiday.ts",
+      "composition": "40% VIP + 20% holiday = 60% \u003e 50%",
+      "why": "dependent historical intent caps total discount; overlapping promotions compose above the cap"
+    }
+  ],
+  "intact": [
+    "charge"
+  ],
+  "message": "intent regression"
+}

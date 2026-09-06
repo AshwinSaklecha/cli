@@ -452,7 +452,7 @@ func worktreeOverlay(ctx context.Context, _ hold.GraphClient) []hold.Change {
 	if err != nil {
 		return nil
 	}
-	cmd := exec.CommandContext(ctx, "git", "-C", root, "status", "--porcelain", "-z", "--no-optional-locks")
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "--no-optional-locks", "status", "--porcelain", "-z")
 	out, err := cmd.Output()
 	if err != nil {
 		return nil
