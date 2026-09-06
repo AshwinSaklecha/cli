@@ -1,0 +1,9 @@
+Build Hold. Do not change public charge(). Retries must stay idempotent. No new runtime dependency. VIP customers never receive more than 50% total discount, regardless of overlapping promotions. Add tests for every caller of charge.
+
+---
+
+Build Hold. Do not change public charge(). Retries must stay idempotent. No new runtime dependencies. VIP customers never receive more than 50% total discount, regardless of overlapping promotions. Add tests for every caller of charge.
+
+---
+
+Build Hold. Do not change public charge(). Retries must stay idempotent. No new runtime dependencies. VIP customers never receive more than 50% total discount, regardless of overlapping promotions. Add tests for every caller of charge.
