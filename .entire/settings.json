@@ -1,14 +1,14 @@
 {
   "enabled": true,
   "strategy_options": {
-    "checkpoint_remote": {
-      "provider": "github",
-      "repo": "entireio/cli-checkpoints"
-    },
     "filtered_fetches": true
   },
-  "strategy": "manual-commit",
+  "absolute_git_hook_path": true,
+  "commit_linking": "always",
   "checkpoints": {
-    "primary": { "type": "git-refs" }
-  }
+    "primary": {
+      "type": "git-refs"
+    }
+  },
+  "strategy": "manual-commit"
 }
