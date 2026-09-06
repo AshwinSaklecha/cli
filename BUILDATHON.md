@@ -88,7 +88,8 @@ Explain path is local subprocess, not `Client.Post`. No `net/http` in `internal/
 |------|-----|--------|
 | Initial Hold gate + fixture | `01M1TN87DYXKAN6629B0HPMV94` | `80ecdc6` hold: add compile/check/amend/prove gate and charge-api fixture |
 | Pre-noon stable (check on uncommitted charge) | `01M1TNC2Z36KRPTTVATV7T1FT1` | `b5e7e15` hold: fail check on uncommitted charge() edits |
-| Curveball (privacy code) | *(attached on the following agent commit)* | `c7ff40d` hold: keep extract local under the noon privacy boundary |
+| Curveball (privacy code) | *(no Entire-Checkpoint trailer on `c7ff40d` / `21d91bc` / `8d9f98c` as of this follow-up)* | `c7ff40d` hold: keep extract local under the noon privacy boundary |
+| Curveball follow-up | this commit’s `Entire-Checkpoint:` trailer (if the hook attaches one) | docs: attach noon/privacy checkpoint |
 
 Reconstruct:
 
