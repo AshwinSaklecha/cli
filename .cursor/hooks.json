@@ -2,37 +2,37 @@
   "hooks": {
     "beforeSubmitPrompt": [
       {
-        "command": "cmd.exe /d /s /c \"where.exe entire >nul 2>nul & if errorlevel 1 (ver>nul) else (entire hooks cursor before-submit-prompt)\""
+        "command": "cmd.exe /d /s /c \"if exist D:\\Scripts\\entire.exe (D:\\Scripts\\entire.exe hooks cursor before-submit-prompt) else (ver>nul)\""
       }
     ],
     "preCompact": [
       {
-        "command": "cmd.exe /d /s /c \"where.exe entire >nul 2>nul & if errorlevel 1 (ver>nul) else (entire hooks cursor pre-compact)\""
+        "command": "cmd.exe /d /s /c \"if exist D:\\Scripts\\entire.exe (D:\\Scripts\\entire.exe hooks cursor pre-compact) else (ver>nul)\""
       }
     ],
     "sessionEnd": [
       {
-        "command": "cmd.exe /d /s /c \"where.exe entire >nul 2>nul & if errorlevel 1 (ver>nul) else (entire hooks cursor session-end)\""
+        "command": "cmd.exe /d /s /c \"if exist D:\\Scripts\\entire.exe (D:\\Scripts\\entire.exe hooks cursor session-end) else (ver>nul)\""
       }
     ],
     "sessionStart": [
       {
-        "command": "cmd.exe /d /s /c \"where.exe entire >nul 2>nul & if errorlevel 1 (ver>nul) else (entire hooks cursor session-start)\""
+        "command": "cmd.exe /d /s /c \"if exist D:\\Scripts\\entire.exe (D:\\Scripts\\entire.exe hooks cursor session-start) else (ver>nul)\""
       }
     ],
     "stop": [
       {
-        "command": "cmd.exe /d /s /c \"where.exe entire >nul 2>nul & if errorlevel 1 (ver>nul) else (entire hooks cursor stop)\""
+        "command": "cmd.exe /d /s /c \"if exist D:\\Scripts\\entire.exe (D:\\Scripts\\entire.exe hooks cursor stop) else (ver>nul)\""
       }
     ],
     "subagentStart": [
       {
-        "command": "cmd.exe /d /s /c \"where.exe entire >nul 2>nul & if errorlevel 1 (ver>nul) else (entire hooks cursor subagent-start)\""
+        "command": "cmd.exe /d /s /c \"if exist D:\\Scripts\\entire.exe (D:\\Scripts\\entire.exe hooks cursor subagent-start) else (ver>nul)\""
       }
     ],
     "subagentStop": [
       {
-        "command": "cmd.exe /d /s /c \"where.exe entire >nul 2>nul & if errorlevel 1 (ver>nul) else (entire hooks cursor subagent-stop)\""
+        "command": "cmd.exe /d /s /c \"if exist D:\\Scripts\\entire.exe (D:\\Scripts\\entire.exe hooks cursor subagent-stop) else (ver>nul)\""
       }
     ]
   },
