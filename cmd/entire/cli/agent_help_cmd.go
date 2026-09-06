@@ -203,7 +203,9 @@ var agentHelpGuidance = map[string]string{
 	"hold": "Gate, not a report. compile binds checkpoint promises onto Graph symbols.\n" +
 		"check fails (exit 1) if a frozen neighborhood moved — run it before committing.\n" +
 		"amend when the plan changes (CONFLICT / SUPERSEDED). prove checks freeze intact\n" +
-		"and dependent historical intent. Never skip check. permit.md is briefing only.",
+		"and dependent historical intent. Never skip check. permit.md is briefing only.\n" +
+		"compile extract is local (no transcript HTTP). Redacted or missing checkpoints\n" +
+		"compile to UNBOUND/OPEN/UNVERIFIED — never a fake freeze or HOLD CHECK PASSED.",
 	"api": "LAST RESORT. Right in two cases: you are developing against Entire's own\n" +
 		"APIs and want a raw response, or no first-class command covers your need.\n" +
 		"Otherwise prefer the command built for the job (checkpoint, session, trail,\n" +

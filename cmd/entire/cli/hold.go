@@ -82,6 +82,9 @@ func newHoldCompileCmd() *cobra.Command {
 				return writeJSON(cmd.OutOrStdout(), c)
 			}
 			printCompile(cmd.OutOrStdout(), c)
+			if hold.ContextIncomplete(c) {
+				return nil
+			}
 			if hold.FrozenCount(c) == 0 {
 				fmt.Fprintln(cmd.ErrOrStderr(), "hold compile: zero FROZEN items — Graph bind is dead.")
 				return NewCodedSilentError(2, errors.New("zero frozen"))
@@ -180,12 +183,13 @@ func newHoldCheckCmd() *cobra.Command {
 					return err
 				}
 			}
-			if !res.Passed {
-				fmt.Fprint(cmd.ErrOrStderr(), hold.FormatCheckFailure(c, res))
+			msg, fail := hold.CheckOutcome(c, res)
+			if fail {
+				fmt.Fprint(cmd.ErrOrStderr(), msg)
 				return NewSilentError(errors.New("hold check failed"))
 			}
 			if !jsonOut {
-				fmt.Fprintln(cmd.OutOrStdout(), "HOLD CHECK PASSED")
+				fmt.Fprint(cmd.OutOrStdout(), msg)
 			}
 			return nil
 		},
@@ -624,6 +628,9 @@ func printCompile(w io.Writer, c *hold.Charter) {
 }
 
 func printStatus(w io.Writer, c *hold.Charter) {
+	if hold.ContextIncomplete(c) {
+		fmt.Fprint(w, hold.FormatContextIncomplete(c))
+	}
 	fmt.Fprintf(w, "%-6s %-16s %-28s %s\n", "ID", "STATUS", "FILE:LINE", "CONSTRAINT")
 	for _, it := range c.Items {
 		loc := "-"

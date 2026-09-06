@@ -39,7 +39,7 @@ type BindResult struct {
 }
 
 // Bind cites Graph for an extracted constraint. Ambiguous or missing → UNBOUND.
-// Never freeze from an uncited guess.
+// Never freeze from an uncited guess. Never freeze from a redacted hole.
 func Bind(ctx context.Context, g GraphClient, repo string, ex Extracted, depth int, excludeTests bool) BindResult {
 	guess := strings.TrimSpace(ex.SymbolGuess)
 	item := Item{
@@ -51,6 +51,13 @@ func Bind(ctx context.Context, g GraphClient, repo string, ex Extracted, depth i
 			TranscriptRef: ex.TranscriptRef,
 		},
 		Kind: constraintKind(ex),
+	}
+
+	if HolePreventsFreeze(ex) {
+		item.Status = StatusUnbound
+		item.Reason = "redacted or missing checkpoint text; cannot freeze"
+		item.FreezeSet = nil
+		return BindResult{Item: item, UnboundWhy: item.Reason}
 	}
 
 	if isManifestConstraint(ex) {

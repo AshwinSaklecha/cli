@@ -161,6 +161,7 @@ func (e ExecClients) CheckpointList(ctx context.Context) ([]CheckpointMeta, erro
 	return parseCheckpointList(out)
 }
 
+// ExplainFull is a local `entire checkpoint explain` subprocess — not HTTP.
 func (e ExecClients) ExplainFull(ctx context.Context, id string) (string, error) {
 	out, err := e.run(ctx, []string{"checkpoint", "explain", id, "--full", "--no-pager"})
 	if err != nil {

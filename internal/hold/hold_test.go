@@ -3,6 +3,8 @@ package hold
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"os"
 	"strings"
 	"testing"
 )
@@ -259,4 +261,166 @@ func (s stubGraph) Neighbors(context.Context, string, string, string, string) ([
 }
 func (s stubGraph) Doctor(context.Context) (GraphPluginInfo, error) {
 	return GraphPluginInfo{Version: "test", DoctorOK: true}, nil
+}
+
+func TestCompile_RedactedCheckpoint_IncompleteNoFakeFrozen(t *testing.T) {
+	t.Parallel()
+	raw, err := os.ReadFile("testdata/redacted_checkpoint.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	g := stubGraph{
+		defs: map[string][]Symbol{
+			"charge":      {{Name: "charge", File: "demo/charge-api/src/charge.ts", Line: 12, Kind: "function"}},
+			"retryCharge": {{Name: "retryCharge", File: "demo/charge-api/src/retry.ts", Line: 4, Kind: "function"}},
+			"REDACTED":    {{Name: "REDACTED", File: "demo/charge-api/src/charge.ts", Line: 12, Kind: "function"}},
+		},
+		impact: map[string]ImpactResult{
+			"charge": {Callers: []string{"processPayment"}, Neighborhood: []FreezeEntry{{Name: "charge", File: "demo/charge-api/src/charge.ts", Line: 12}}},
+		},
+	}
+	e := stubEntire{full: map[string]string{"cp-redacted": string(raw)}}
+	c, err := Compile(ctx, g, e, ".", []string{"cp-redacted"}, 2, true, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ContextIncomplete(c) {
+		t.Fatalf("want incomplete, quality=%q items=%+v", c.ContextQuality, c.Items)
+	}
+	if FrozenCount(c) != 0 {
+		t.Fatalf("fake FROZEN from redacted holes: %+v", c.Items)
+	}
+	for _, it := range c.Items {
+		if it.Status == StatusFrozen || len(it.FreezeSet) > 0 {
+			t.Fatalf("must not freeze from redacted hole: %+v", it)
+		}
+	}
+	hasU, hasO, hasV := false, false, false
+	for _, it := range c.Items {
+		switch it.Status {
+		case StatusUnbound:
+			hasU = true
+		case StatusOpen:
+			hasO = true
+		case StatusUnverified:
+			hasV = true
+		}
+	}
+	if !hasU || !hasO || !hasV {
+		t.Fatalf("want UNBOUND+OPEN+UNVERIFIED, got %+v", c.Items)
+	}
+	msg, fail := CheckOutcome(c, RunCheck(c, nil, nil))
+	if fail {
+		t.Fatal(msg)
+	}
+	if strings.Contains(msg, "HOLD CHECK PASSED") || !strings.Contains(msg, "INCOMPLETE") {
+		t.Fatal(msg)
+	}
+}
+
+func TestCompile_MissingCheckpoint_IncompleteNoPanic(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	e := stubEntire{errs: map[string]error{"cp-missing": errors.New("checkpoint not found")}}
+	c, err := Compile(ctx, stubGraph{}, e, ".", []string{"cp-missing"}, 2, true, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ContextIncomplete(c) {
+		t.Fatal(c.ContextQuality)
+	}
+	if FrozenCount(c) != 0 {
+		t.Fatalf("fake FROZEN: %+v", c.Items)
+	}
+	res := RunCheck(c, []Change{{Name: "charge", File: "demo/charge-api/src/charge.ts", Kind: "body-changed"}}, nil)
+	msg, fail := CheckOutcome(c, res)
+	if fail {
+		t.Fatal("missing checkpoint has no freeze; must not fake a complete failure", msg)
+	}
+	if strings.Contains(msg, "HOLD CHECK PASSED") {
+		t.Fatal(msg)
+	}
+}
+
+func TestCompile_CompleteCheckpointStillFreezesCharge(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	g := stubGraph{
+		defs: map[string][]Symbol{
+			"charge": {{Name: "charge", File: "demo/charge-api/src/charge.ts", Line: 12, Kind: "function"}},
+		},
+		impact: map[string]ImpactResult{
+			"charge": {Callers: []string{"processPayment"}, Neighborhood: []FreezeEntry{{Name: "charge", File: "demo/charge-api/src/charge.ts", Line: 12}}},
+		},
+	}
+	e := stubEntire{full: map[string]string{"cp1": "Do not change public charge().\nRetries must stay idempotent.\n"}}
+	c, err := Compile(ctx, g, e, ".", []string{"cp1"}, 2, true, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ContextIncomplete(c) {
+		t.Fatalf("complete blob marked incomplete: %+v", c.IncompleteReasons)
+	}
+	if FrozenCount(c) == 0 {
+		t.Fatalf("expected freeze, items=%+v", c.Items)
+	}
+	res := RunCheck(c, []Change{{
+		Name: "charge",
+		File: "demo/charge-api/src/charge.ts",
+		Line: 12,
+		Kind: "body-changed",
+	}}, nil)
+	msg, fail := CheckOutcome(c, res)
+	if !fail || !strings.Contains(msg, "HOLD CHECK FAILED") {
+		t.Fatal(msg)
+	}
+}
+
+func TestCheckOutcome_IncompleteDoesNotClaimPassed(t *testing.T) {
+	t.Parallel()
+	c := &Charter{
+		ContextQuality: ContextQualityIncomplete,
+		Items:          []Item{{ID: "H001", Status: StatusUnbound, Constraint: "missing"}},
+	}
+	res := RunCheck(c, nil, nil)
+	if !res.Incomplete || !res.Passed {
+		t.Fatalf("%+v", res)
+	}
+	msg, fail := CheckOutcome(c, res)
+	if fail || strings.Contains(msg, "HOLD CHECK PASSED") || !strings.Contains(msg, "INCOMPLETE") {
+		t.Fatal(msg)
+	}
+}
+
+type stubEntire struct {
+	full map[string]string
+	raw  map[string]string
+	errs map[string]error
+}
+
+func (s stubEntire) CheckpointList(context.Context) ([]CheckpointMeta, error) { return nil, nil }
+func (s stubEntire) Why(context.Context, string) ([]CheckpointMeta, error)    { return nil, nil }
+func (s stubEntire) Blame(context.Context, string) ([]CheckpointMeta, error)  { return nil, nil }
+func (s stubEntire) ExplainFull(_ context.Context, id string) (string, error) {
+	if s.errs != nil {
+		if err, ok := s.errs[id]; ok {
+			return "", err
+		}
+	}
+	if s.full != nil {
+		return s.full[id], nil
+	}
+	return "", nil
+}
+func (s stubEntire) ExplainRawTranscript(_ context.Context, id string) (string, error) {
+	if s.errs != nil {
+		if err, ok := s.errs[id]; ok {
+			return "", err
+		}
+	}
+	if s.raw != nil {
+		return s.raw[id], nil
+	}
+	return "", nil
 }

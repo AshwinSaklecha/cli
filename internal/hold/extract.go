@@ -12,7 +12,8 @@ var identTickRe = regexp.MustCompile("`([A-Za-z_][A-Za-z0-9_]*)`")
 var identCallRe = regexp.MustCompile(`\b([A-Za-z_][A-Za-z0-9_]*)\(\)`)
 
 // ExtractConstraints pulls gate sentences from checkpoint explain text and/or
-// raw JSONL. No API key. Prefer UNBOUND later over a hallucinated freeze.
+// raw JSONL. Local regex only — never POST prompts or transcripts off-machine.
+// Prefer UNBOUND later over a hallucinated freeze.
 func ExtractConstraints(checkpointID, blob string) []Extracted {
 	if strings.TrimSpace(blob) == "" {
 		return nil
@@ -61,6 +62,9 @@ func isHoldSignal(sentence string) bool {
 	if strings.Contains(l, "do not redo") || strings.Contains(l, "do not research") || strings.Contains(l, "do not invent") || strings.Contains(l, "do not skip") || strings.Contains(l, "do not fake") {
 		return false
 	}
+	if isPrivacyBoundaryText(sentence) {
+		return true
+	}
 	switch {
 	case strings.Contains(l, "charge"):
 		return true
@@ -79,6 +83,9 @@ func isHoldSignal(sentence string) bool {
 
 // GuessSymbol picks a likely identifier from a constraint sentence.
 func GuessSymbol(sentence string) string {
+	if isPrivacyBoundaryText(sentence) {
+		return ""
+	}
 	if m := identTickRe.FindStringSubmatch(sentence); len(m) > 1 {
 		return m[1]
 	}
@@ -161,6 +168,58 @@ func flattenPrompt(m map[string]any) string {
 		}
 	}
 	return ""
+}
+
+// ContainsRedaction reports Entire's replacement tokens (REDACTED,
+// [REDACTED_LABEL]). It does not match the English word "redacted".
+func ContainsRedaction(s string) bool {
+	if strings.Contains(s, "[REDACTED") {
+		return true
+	}
+	for i := 0; i < len(s); {
+		j := strings.Index(s[i:], "REDACTED")
+		if j < 0 {
+			return false
+		}
+		j += i
+		beforeOK := j == 0 || !isIdentByte(s[j-1])
+		after := j + len("REDACTED")
+		afterOK := after >= len(s) || !isIdentByte(s[after])
+		if beforeOK && afterOK {
+			return true
+		}
+		i = j + 1
+	}
+	return false
+}
+
+func isIdentByte(b byte) bool {
+	return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9') || b == '_'
+}
+
+// HolePreventsFreeze is true when a quote/guess is a redacted hole or empty.
+// Those items stay UNBOUND — never FROZEN.
+func HolePreventsFreeze(ex Extracted) bool {
+	return ContainsRedaction(ex.Constraint) || ContainsRedaction(ex.Quote) || ContainsRedaction(ex.SymbolGuess)
+}
+
+// ClassifyCheckpointBlob is missing / redacted / ok. Empty text is missing.
+func ClassifyCheckpointBlob(blob string) string {
+	if strings.TrimSpace(blob) == "" {
+		return "missing"
+	}
+	if ContainsRedaction(blob) {
+		return "redacted"
+	}
+	return "ok"
+}
+
+func isPrivacyBoundaryText(s string) bool {
+	l := strings.ToLower(s)
+	if !(strings.Contains(l, "transcript") || strings.Contains(l, "prompt") || strings.Contains(l, "external service")) {
+		return false
+	}
+	return strings.Contains(l, "must not") || strings.Contains(l, "must not be sent") || strings.Contains(l, "redact") || strings.Contains(l, "incomplete") || strings.Contains(l, "unbound")
 }
 
 func firstPromptLines(text string) []string {

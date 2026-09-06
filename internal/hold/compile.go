@@ -110,6 +110,8 @@ func QuotesFromCharter(c *Charter) []DependentQuote {
 }
 
 // Compile merges extract+bind across checkpoints into a charter.
+// Extract is local regex via EntireClient (subprocess explain). It never
+// POSTs prompts or transcripts to an external HTTP API.
 func Compile(ctx context.Context, g GraphClient, e EntireClient, repo string, ids []string, depth int, excludeTests bool, manifests map[string]string) (*Charter, error) {
 	if depth <= 0 {
 		depth = DefaultFreezeDepth
@@ -125,20 +127,30 @@ func Compile(ctx context.Context, g GraphClient, e EntireClient, repo string, id
 		GraphPlugin:       plugin,
 		FreezeDepth:       depth,
 		Databricks:        DatabricksCfg{Enabled: false},
+		ContextQuality:    ContextQualityComplete,
 	}
 
 	var extracted []Extracted
+	var placeholders []Item
 	for _, id := range ids {
-		blob := ""
-		if e != nil {
-			if full, err := e.ExplainFull(ctx, id); err == nil {
-				blob += full + "\n"
-			}
-			if raw, err := e.ExplainRawTranscript(ctx, id); err == nil {
-				blob += raw + "\n"
-			}
+		blob, missing := loadCheckpointBlob(ctx, e, id)
+		kind := ClassifyCheckpointBlob(blob)
+		if missing || kind == "missing" {
+			c.ContextQuality = ContextQualityIncomplete
+			c.IncompleteReasons = append(c.IncompleteReasons, id+": checkpoint text missing")
+			placeholders = append(placeholders, incompletePlaceholders(id, "missing")...)
+			continue
 		}
-		extracted = append(extracted, ExtractConstraints(id, blob)...)
+		if kind == "redacted" {
+			c.ContextQuality = ContextQualityIncomplete
+			c.IncompleteReasons = append(c.IncompleteReasons, id+": redacted checkpoint fields")
+		}
+		exs := ExtractConstraints(id, blob)
+		if len(exs) == 0 && kind == "redacted" {
+			placeholders = append(placeholders, incompletePlaceholders(id, "redacted")...)
+			continue
+		}
+		extracted = append(extracted, exs...)
 	}
 
 	next := "H001"
@@ -163,10 +175,101 @@ func Compile(ctx context.Context, g GraphClient, e EntireClient, repo string, id
 			}
 		}
 	}
+	for _, it := range placeholders {
+		it.ID = next
+		next = incID(next)
+		it.FreezeSet = nil
+		c.Items = append(c.Items, it)
+	}
 
-	markUnverified(c)
-	enrichFixtureCharge(c)
+	if ContextIncomplete(c) {
+		ensureIncompleteStatuses(c)
+	} else {
+		markUnverified(c)
+		enrichFixtureCharge(c)
+	}
 	return c, nil
+}
+
+func loadCheckpointBlob(ctx context.Context, e EntireClient, id string) (string, bool) {
+	if e == nil {
+		return "", true
+	}
+	var blob string
+	if full, err := e.ExplainFull(ctx, id); err == nil {
+		blob += full + "\n"
+	}
+	if raw, err := e.ExplainRawTranscript(ctx, id); err == nil {
+		blob += raw + "\n"
+	}
+	if strings.TrimSpace(blob) == "" {
+		return "", true
+	}
+	return blob, false
+}
+
+func incompletePlaceholders(checkpointID, kind string) []Item {
+	why := "checkpoint text " + kind + "; cannot freeze"
+	return []Item{
+		{
+			Status:       StatusUnbound,
+			Constraint:   "checkpoint " + shortID(checkpointID) + " is " + kind + "; Graph cannot cite a symbol",
+			CheckpointID: checkpointID,
+			Evidence:     Evidence{Quote: why, TranscriptRef: checkpointID},
+			Reason:       why,
+		},
+		{
+			Status:       StatusOpen,
+			Constraint:   "promised constraints unknown until checkpoint text is available",
+			CheckpointID: checkpointID,
+			Evidence:     Evidence{Quote: why, TranscriptRef: checkpointID},
+			Reason:       why,
+		},
+		{
+			Status:       StatusUnverified,
+			Constraint:   "tool JSONL unavailable; tests not verified",
+			CheckpointID: checkpointID,
+			Evidence:     Evidence{Quote: why, TranscriptRef: checkpointID},
+			Reason:       why,
+		},
+	}
+}
+
+func ensureIncompleteStatuses(c *Charter) {
+	if c == nil {
+		return
+	}
+	cp := ""
+	if len(c.SourceCheckpoints) > 0 {
+		cp = c.SourceCheckpoints[0]
+	}
+	if !hasStatus(c, StatusUnbound) {
+		c.Items = append(c.Items, Item{
+			ID:           nextItemID(c),
+			Status:       StatusUnbound,
+			Constraint:   "incomplete checkpoint context; cannot freeze",
+			CheckpointID: cp,
+			Reason:       "redacted or missing checkpoint text; cannot freeze",
+		})
+	}
+	if !hasStatus(c, StatusOpen) {
+		c.Items = append(c.Items, Item{
+			ID:           nextItemID(c),
+			Status:       StatusOpen,
+			Constraint:   "promised constraints unknown until checkpoint text is available",
+			CheckpointID: cp,
+			Reason:       "incomplete context",
+		})
+	}
+	if !hasStatus(c, StatusUnverified) {
+		c.Items = append(c.Items, Item{
+			ID:           nextItemID(c),
+			Status:       StatusUnverified,
+			Constraint:   "tool JSONL unavailable; tests not verified",
+			CheckpointID: cp,
+			Reason:       "incomplete context",
+		})
+	}
 }
 
 func enrichFixtureCharge(c *Charter) {

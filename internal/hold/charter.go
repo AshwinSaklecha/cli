@@ -45,6 +45,17 @@ func RenderPermit(c *Charter) string {
 	var b strings.Builder
 	b.WriteString("# Hold continuation permit\n\n")
 	b.WriteString("Briefing for the next agent. **Not enforced.** Enforcement is `entire hold check` (exit 1).\n\n")
+	if ContextIncomplete(c) {
+		b.WriteString("## Context: INCOMPLETE\n\n")
+		b.WriteString("This is **not** a complete permit. UNBOUND/OPEN/UNVERIFIED items were not frozen.\n")
+		b.WriteString("Nothing was frozen from redacted or missing checkpoint text.\n\n")
+		for _, r := range c.IncompleteReasons {
+			fmt.Fprintf(&b, "- %s\n", r)
+		}
+		b.WriteByte('\n')
+	} else {
+		b.WriteString("## Context: complete\n\n")
+	}
 	b.WriteString("## Frozen\n\n")
 	b.WriteString("| id | symbol | file:line | constraint | checkpoint |\n")
 	b.WriteString("|----|--------|-----------|------------|------------|\n")
@@ -59,6 +70,8 @@ func RenderPermit(c *Charter) string {
 		}
 		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s |\n", it.ID, sym, loc, clip(it.Constraint, 80), shortID(it.CheckpointID))
 	}
+	b.WriteString("\n## UNBOUND\n\n")
+	writeStatusList(&b, c, StatusUnbound)
 	b.WriteString("\n## OPEN\n\n")
 	writeStatusList(&b, c, StatusOpen)
 	b.WriteString("\n## UNVERIFIED\n\n")
@@ -102,6 +115,36 @@ func shortID(id string) string {
 		return id[:12]
 	}
 	return id
+}
+
+// ContextIncomplete is true only when compile marked the charter incomplete.
+// A pre-noon charter with omitted context_quality is treated as complete.
+func ContextIncomplete(c *Charter) bool {
+	if c == nil {
+		return true
+	}
+	return c.ContextQuality == ContextQualityIncomplete
+}
+
+// FormatContextIncomplete is the user-facing incomplete banner. It must never
+// contain HOLD CHECK PASSED.
+func FormatContextIncomplete(c *Charter) string {
+	var b strings.Builder
+	b.WriteString("HOLD CONTEXT INCOMPLETE\n")
+	b.WriteString("This is not a complete permit. UNBOUND/OPEN/UNVERIFIED are not FROZEN.\n")
+	b.WriteString("Nothing was frozen from redacted or missing checkpoint text.\n")
+	if c != nil {
+		for _, r := range c.IncompleteReasons {
+			fmt.Fprintf(&b, "- %s\n", r)
+		}
+		for _, it := range c.Items {
+			switch it.Status {
+			case StatusUnbound, StatusOpen, StatusUnverified:
+				fmt.Fprintf(&b, "%s %s %s\n", it.ID, it.Status, clip(it.Constraint, 80))
+			}
+		}
+	}
+	return b.String()
 }
 
 // FrozenCount is used by compile's exit-2 gate.

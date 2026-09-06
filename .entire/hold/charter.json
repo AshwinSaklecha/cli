@@ -2,7 +2,7 @@
   "version": "1",
   "repo": "D:/BTW Hackathon/cli",
   "created_at": "2026-09-06T05:51:31.0338499Z",
-  "updated_at": "2026-09-06T05:51:31.0338499Z",
+  "updated_at": "2026-09-06T06:56:58.1528078Z",
   "source_checkpoints": [
     "b352152c86225b8295ae2e672d9f06c6abb09315"
   ],
@@ -54,7 +54,8 @@
       "evidence": {
         "quote": "Add tests for every caller of charge",
         "transcript_ref": "b352152c86225b8295ae2e672d9f06c6abb09315"
-      }
+      },
+      "impact": {}
     },
     {
       "id": "H003",
@@ -62,14 +63,16 @@
       "constraint": "caller webhookRetry has no tests in checkpoint tool JSONL",
       "checkpoint_id": "b352152c86225b8295ae2e672d9f06c6abb09315",
       "evidence": {
-        "quote": "Add tests for every caller of charge"
+        "quote": "Add tests for every caller of charge",
+        "transcript_ref": ""
       },
       "symbol": {
         "name": "webhookRetry",
         "file": "demo/charge-api/src/webhookRetry.ts",
         "line": 4,
         "kind": "function"
-      }
+      },
+      "impact": {}
     },
     {
       "id": "H004",
@@ -77,14 +80,16 @@
       "constraint": "caller invoiceCharge has no tests in checkpoint tool JSONL",
       "checkpoint_id": "b352152c86225b8295ae2e672d9f06c6abb09315",
       "evidence": {
-        "quote": "Add tests for every caller of charge"
+        "quote": "Add tests for every caller of charge",
+        "transcript_ref": ""
       },
       "symbol": {
         "name": "invoiceCharge",
         "file": "demo/charge-api/src/invoiceCharge.ts",
         "line": 4,
         "kind": "function"
-      }
+      },
+      "impact": {}
     },
     {
       "id": "H005",
@@ -101,8 +106,22 @@
         "line": 4,
         "kind": "function"
       },
-      "kind": "behavioral",
-      "reason": "dependent-intent quote for prove; not a freeze (holidayBonus must remain a legal edit)"
+      "impact": {},
+      "reason": "dependent-intent quote for prove; not a freeze (holidayBonus must remain a legal edit)",
+      "kind": "behavioral"
+    },
+    {
+      "id": "H006",
+      "status": "OPEN",
+      "constraint": "Raw prompts and transcripts must not be sent to a new external service. Compile, status, permit, and check must still run when checkpoint text is redacted or missing, printing UNBOUND/OPEN/UNVERIFIED instead of freezing holes. Never present incomplete context as a complete permit. Do not weaken the charge() freeze.",
+      "checkpoint_id": "",
+      "evidence": {
+        "quote": "Raw prompts and transcripts must not be sent to a new external service. Compile, status, permit, and check must still run when checkpoint text is redacted or missing, printing UNBOUND/OPEN/UNVERIFIED instead of freezing holes. Never present incomplete context as a complete permit. Do not weaken the charge() freeze.",
+        "transcript_ref": ""
+      },
+      "impact": {},
+      "reason": "noon Track 1 privacy boundary: local extract only; not a charge() freeze",
+      "kind": "behavioral"
     }
   ],
   "dependency_policy": {
@@ -114,5 +133,7 @@
   "databricks": {
     "enabled": false
   },
-  "freeze_depth": 2
+  "freeze_depth": 2,
+  "last_amend": "Raw prompts and transcripts must not be sent to a new external service. Compile, status, permit, and check must still run when checkpoint text is redacted or missing, printing UNBOUND/OPEN/UNVERIFIED instead of freezing holes. Never present incomplete context as a complete permit. Do not weaken the charge() freeze.",
+  "last_amend_reason": "noon Track 1 privacy boundary: no raw transcript egress"
 }

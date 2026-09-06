@@ -54,7 +54,16 @@ type Charter struct {
 	FreezeDepth       int               `json:"freeze_depth,omitempty"`
 	LastAmend         string            `json:"last_amend,omitempty"`
 	LastAmendReason   string            `json:"last_amend_reason,omitempty"`
+	ContextQuality    string            `json:"context_quality,omitempty"`
+	IncompleteReasons []string          `json:"incomplete_reasons,omitempty"`
 }
+
+// Context quality labels. Incomplete charters must not be presented as a
+// complete permit; UNBOUND/OPEN/UNVERIFIED are not FROZEN.
+const (
+	ContextQualityComplete   = "complete"
+	ContextQualityIncomplete = "incomplete"
+)
 
 // GraphPluginInfo records the graph used at compile time.
 type GraphPluginInfo struct {
@@ -134,6 +143,7 @@ type CheckResult struct {
 	Intersections []Intersection `json:"intersections,omitempty"`
 	ManifestBreak []string       `json:"manifest_break,omitempty"`
 	Message       string         `json:"message,omitempty"`
+	Incomplete    bool           `json:"incomplete,omitempty"`
 }
 
 // Intersection is a freeze_set hit.

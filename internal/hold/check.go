@@ -44,7 +44,25 @@ func RunCheck(c *Charter, changes []Change, currentManifests map[string]string) 
 			}
 		}
 	}
+	if ContextIncomplete(c) {
+		res.Incomplete = true
+		if res.Passed && res.Message == "" {
+			res.Message = "incomplete context — not a complete permit"
+		}
+	}
 	return res
+}
+
+// CheckOutcome is the user-facing check result. Incomplete charters never
+// claim HOLD CHECK PASSED. Intersection failures still exit fail (exit 1).
+func CheckOutcome(c *Charter, res CheckResult) (msg string, exitFail bool) {
+	if !res.Passed {
+		return FormatCheckFailure(c, res), true
+	}
+	if ContextIncomplete(c) {
+		return FormatContextIncomplete(c), false
+	}
+	return "HOLD CHECK PASSED\n", false
 }
 
 func intersects(it Item, ch Change) (bool, FreezeEntry) {

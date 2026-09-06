@@ -113,7 +113,7 @@ func conflictingFreeze(c *Charter, neu Item) string {
 func contradicts(a, b string) bool {
 	al, bl := strings.ToLower(a), strings.ToLower(b)
 	forbid := strings.Contains(al, "do not") || strings.Contains(al, "don't") || strings.Contains(al, "must not") || strings.Contains(al, "never")
-	allow := strings.Contains(bl, "allow") || strings.Contains(bl, "may ") || strings.Contains(bl, "permit") || strings.Contains(bl, "add a") || strings.Contains(bl, "new parameter")
+	allow := strings.Contains(bl, "allow") || strings.Contains(bl, "may ") || strings.Contains(bl, "add a") || strings.Contains(bl, "new parameter")
 	return forbid && allow
 }
 
