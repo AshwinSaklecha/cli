@@ -44,3 +44,36 @@ func (e *SilentError) AlreadyPrinted() bool {
 func NewSilentError(err error) *SilentError {
 	return &SilentError{Err: err}
 }
+
+// CodedError is an already-printed error with a process exit code other than 1.
+// Hold uses 2 for missing charter / zero FROZEN (bind is dead).
+type CodedError struct {
+	silent *SilentError
+	Code   int
+}
+
+func (e *CodedError) Error() string {
+	if e == nil || e.silent == nil {
+		return ""
+	}
+	return e.silent.Error()
+}
+
+func (e *CodedError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.silent
+}
+
+func (e *CodedError) ExitCode() int {
+	if e == nil || e.Code == 0 {
+		return 1
+	}
+	return e.Code
+}
+
+// NewCodedSilentError wraps an already-printed error with an exit code.
+func NewCodedSilentError(code int, err error) *CodedError {
+	return &CodedError{silent: NewSilentError(err), Code: code}
+}

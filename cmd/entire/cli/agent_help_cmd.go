@@ -107,6 +107,16 @@ var agentHelpClassification = map[string]agentHelpFacts{
 	"checkpoint tokens":  {agentHelpAudienceReadOnly, false},
 	"checkpoint policy":  {agentHelpAudienceTaskDriven, false}, // "Inspect and update"
 
+	"hold":         {agentHelpAudienceTaskDriven, true},
+	"hold compile": {agentHelpAudienceTaskDriven, false},
+	"hold status":  {agentHelpAudienceReadOnly, false},
+	"hold permit":  {agentHelpAudienceTaskDriven, false},
+	"hold check":   {agentHelpAudienceTaskDriven, false},
+	"hold amend":   {agentHelpAudienceTaskDriven, false},
+	"hold prove":   {agentHelpAudienceTaskDriven, false},
+	"hold publish": {agentHelpAudienceUserOwned, false},
+	"hold pull":    {agentHelpAudienceUserOwned, false},
+
 	"session":         {agentHelpAudienceTaskDriven, true},
 	"session current": {agentHelpAudienceReadOnly, false},
 	"session info":    {agentHelpAudienceReadOnly, false},
@@ -190,6 +200,10 @@ var agentHelpClassification = map[string]agentHelpFacts{
 // true for both audiences (e.g. "these endpoints are internal and can change")
 // belongs in Long instead, where both see it.
 var agentHelpGuidance = map[string]string{
+	"hold": "Gate, not a report. compile binds checkpoint promises onto Graph symbols.\n" +
+		"check fails (exit 1) if a frozen neighborhood moved — run it before committing.\n" +
+		"amend when the plan changes (CONFLICT / SUPERSEDED). prove checks freeze intact\n" +
+		"and dependent historical intent. Never skip check. permit.md is briefing only.",
 	"api": "LAST RESORT. Right in two cases: you are developing against Entire's own\n" +
 		"APIs and want a raw response, or no first-class command covers your need.\n" +
 		"Otherwise prefer the command built for the job (checkpoint, session, trail,\n" +

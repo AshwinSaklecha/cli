@@ -151,7 +151,12 @@ func main() {
 		}
 
 		cancel()
-		os.Exit(1)
+		code := 1
+		var ec interface{ ExitCode() int }
+		if errors.As(err, &ec) {
+			code = ec.ExitCode()
+		}
+		os.Exit(code)
 	}
 	if cli.ShouldCheckCheckpointPolicyWarning(executed) {
 		cli.WarnCheckpointPolicyIfNeeded(ctx, rootCmd.ErrOrStderr(), versioninfo.Version)

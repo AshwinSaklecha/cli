@@ -1,0 +1,9 @@
+{
+  "name": "charge-api",
+  "private": true,
+  "type": "module",
+  "description": "BTW fixture — mock payments app Hold compiles and checks against",
+  "scripts": {
+    "test": "node --experimental-strip-types --test src/charge.test.ts src/retry.test.ts src/vipDiscount.test.ts src/holiday.test.ts"
+  }
+}

@@ -716,7 +716,7 @@ func TestRenderAgentHelpTop_ListsCuratedSubsetWithInlineAudience(t *testing.T) {
 	}
 
 	// Length is the whole point of the curation: guard it directly.
-	if got := strings.Count(out, "\n"); got > 34 {
+	if got := strings.Count(out, "\n"); got > 36 {
 		t.Errorf("listing grew to %d lines; it is curated to stay readable:\n%s", got, out)
 	}
 }

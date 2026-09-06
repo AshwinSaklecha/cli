@@ -1,0 +1,6 @@
+{
+  "dependent": {"name": "processPayment", "file": "demo/charge-api/src/processPayment.ts", "line": 40},
+  "quote": "VIP customers never receive more than 50% total discount, regardless of overlapping promotions.",
+  "checkpoint_id": "01HOLDVIP",
+  "changed": [{"name": "holidayBonus", "file": "demo/charge-api/src/holiday.ts", "kind": "added"}]
+}
